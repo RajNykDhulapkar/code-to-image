@@ -9,7 +9,7 @@ api_router = APIRouter()
 
 @api_router.get("/", status_code=200)
 async def root() -> dict:
-    return {"message": "Hello world"}
+    return {"message": "deployment ready"}
 
 
 app.include_router(api_router)
