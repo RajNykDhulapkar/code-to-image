@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Query
+from fastapi import FastAPI, APIRouter, Query, HTTPException
 
 from typing import Optional
 
@@ -48,6 +48,12 @@ async def fetch_recipe(*, recipe_id: int) -> dict:
         dict: recipe
     """
     result = [recipe for recipe in RECIPES if recipe["id"] == recipe_id]
+
+    if not result:
+        raise HTTPException(
+            status_code=404, detail=f"Recipe with ID {recipe_id} does not exist"
+        )
+
     if result:
         return result[0]
 
