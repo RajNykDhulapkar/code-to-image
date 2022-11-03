@@ -1,8 +1,13 @@
-from fastapi import FastAPI, APIRouter, Query, HTTPException
+from fastapi import FastAPI, APIRouter, Query, HTTPException, Request
+from fastapi.templating import Jinja2Templates
 
-from typing import Optional
+from typing import Optional, Any
+from pathlib import Path
 
 from app.schemas.recipe import RecipeSearchResult, Recipe, RecipeCreate
+
+BASE_PATH = Path(__file__).resolve().parent
+TEMPLATES = Jinja2Templates(directory=str(BASE_PATH / "templates"))
 
 app = FastAPI(
     title="Recipe API", openapi_url="/openapi.json"
@@ -33,8 +38,14 @@ RECIPES = [
 
 
 @api_router.get("/", status_code=200)
-async def root() -> dict:
-    return {"message": "deployment ready"}
+async def root(request: Request) -> dict:
+    """ 
+    Root Get route
+    """
+    return TEMPLATES.TemplateResponse(
+        "index.html",
+        {"request": request, "recipes": RECIPES}
+    )
 
 
 @api_router.get("/recipe/{recipe_id}", status_code=200, response_model=Recipe)
