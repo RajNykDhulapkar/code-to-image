@@ -1,6 +1,8 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Query
 
 from typing import Optional
+
+from app.schemas.recipe import RecipeSearchResult, Recipe, RecipeCreate
 
 app = FastAPI(
     title="Recipe API", openapi_url="/openapi.json"
@@ -35,7 +37,7 @@ async def root() -> dict:
     return {"message": "deployment ready"}
 
 
-@api_router.get("/recipe/{recipe_id}", status_code=200)
+@api_router.get("/recipe/{recipe_id}", status_code=200, response_model=Recipe)
 async def fetch_recipe(*, recipe_id: int) -> dict:
     """Fetch single recipe by id
 
@@ -50,9 +52,11 @@ async def fetch_recipe(*, recipe_id: int) -> dict:
         return result[0]
 
 
-@api_router.get("/search/", status_code=200)
+@api_router.get("/search/", status_code=200, response_model=RecipeSearchResult)
 async def search_recipes(
-        keyword: Optional[str] = None, max_results: Optional[int] = 10
+    *,
+    keyword: Optional[str] = Query(None, min_length=3, example="chicken"),
+    max_results: Optional[int] = 10
 ) -> dict:
     """search for recipes using query parameters
 
@@ -63,11 +67,38 @@ async def search_recipes(
     Returns:
         dict: dict with key results containing matched recipes
     """
+    if not keyword:
+        return {
+            "results": RECIPES[:max_results]
+        }
+
     results = filter(lambda recipe: keyword.lower()
                      in recipe["label"].lower(), RECIPES)
     return {
         "results": list(results)[:max_results]
     }
+
+
+@api_router.post("/recipe/", status_code=201, response_model=Recipe)
+async def create_recipe(*, recipe_in: RecipeCreate) -> dict:
+    """create a new recipe
+
+    Args:
+        recipe_in (RecipeCreate): recipe create input
+
+    Returns:
+        dict: recipe
+    """
+    new_entry_id = len(RECIPES) + 1
+    recipe_entry = Recipe(
+        id=new_entry_id,
+        label=recipe_in.label,
+        source=recipe_in.source,
+        url=recipe_in.url
+    )
+    RECIPES.append(recipe_entry.dict())
+
+    return recipe_entry
 
 
 app.include_router(api_router)
